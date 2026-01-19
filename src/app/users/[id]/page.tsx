@@ -18,6 +18,10 @@ import {
   ChatCircleText,
   Trash,
   Flag,
+  CookingPot,
+  Eye,
+  EyeSlash,
+  PencilSimple,
 } from "@phosphor-icons/react";
 import { Header } from "@/components/layout/Header";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
@@ -31,8 +35,9 @@ import {
   banUser,
   unbanUser,
   deleteUser,
+  getAdminRecipes,
 } from "@/lib/api";
-import type { UserModerationDetailEnhanced } from "@/types/admin";
+import type { UserModerationDetailEnhanced, AdminRecipeListItem } from "@/types/admin";
 
 function formatDate(dateString: string): string {
   return new Date(dateString).toLocaleDateString("en-US", {
@@ -95,6 +100,10 @@ export default function UserModerationPage() {
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
+  // User recipes
+  const [userRecipes, setUserRecipes] = useState<AdminRecipeListItem[]>([]);
+  const [recipesLoading, setRecipesLoading] = useState(true);
+
   // Action modal
   const [showActionModal, setShowActionModal] = useState(false);
   const [actionType, setActionType] = useState<string | null>(null);
@@ -113,9 +122,23 @@ export default function UserModerationPage() {
     }
   }
 
+  async function fetchUserRecipes() {
+    try {
+      setRecipesLoading(true);
+      const recipesData = await getAdminRecipes({ user_id: userId, limit: 20 });
+      setUserRecipes(recipesData.recipes);
+    } catch (err) {
+      // Silent fail for recipes - not critical
+      console.error("Failed to load user recipes:", err);
+    } finally {
+      setRecipesLoading(false);
+    }
+  }
+
   useEffect(() => {
     if (userId) {
       fetchUser();
+      fetchUserRecipes();
     }
   }, [userId]);
 
@@ -553,6 +576,80 @@ export default function UserModerationPage() {
                         </div>
                       </div>
                     ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* User Recipes */}
+            <Card>
+              <CardHeader>
+                <CardTitle>User Recipes ({userRecipes.length})</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {recipesLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                  </div>
+                ) : userRecipes.length === 0 ? (
+                  <p className="text-center text-text-muted py-8">No recipes created</p>
+                ) : (
+                  <div className="space-y-4">
+                    {userRecipes.map((recipe) => (
+                      <div
+                        key={recipe.id}
+                        className="flex items-start gap-4 p-4 rounded-lg bg-surface"
+                      >
+                        {recipe.image_url ? (
+                          <img
+                            src={recipe.image_url}
+                            alt={recipe.title}
+                            className="h-16 w-16 rounded-lg object-cover flex-shrink-0"
+                          />
+                        ) : (
+                          <div className="h-16 w-16 rounded-lg bg-surface-elevated flex items-center justify-center flex-shrink-0">
+                            <CookingPot size={24} className="text-text-muted" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-text-heading font-medium truncate">{recipe.title}</p>
+                          <div className="flex flex-wrap items-center gap-2 mt-1">
+                            <Badge variant="outline">{recipe.source_type}</Badge>
+                            {recipe.is_hidden ? (
+                              <Badge variant="danger" className="flex items-center gap-1">
+                                <EyeSlash size={10} />
+                                Hidden
+                              </Badge>
+                            ) : (
+                              <Badge variant="success" className="flex items-center gap-1">
+                                <Eye size={10} />
+                                Visible
+                              </Badge>
+                            )}
+                            {recipe.is_draft && (
+                              <Badge variant="warning" className="flex items-center gap-1">
+                                <PencilSimple size={10} />
+                                Draft
+                              </Badge>
+                            )}
+                            {!recipe.is_public && !recipe.is_draft && (
+                              <Badge variant="outline">Private</Badge>
+                            )}
+                          </div>
+                          <span className="text-sm text-text-muted mt-1 block">
+                            {formatTimeAgo(recipe.created_at)}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                    {userRecipes.length >= 20 && (
+                      <Link
+                        href={`/recipes?user_id=${userId}`}
+                        className="block text-center text-sm text-primary hover:underline pt-2"
+                      >
+                        View all recipes
+                      </Link>
+                    )}
                   </div>
                 )}
               </CardContent>

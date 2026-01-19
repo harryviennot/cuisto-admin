@@ -19,6 +19,9 @@ import type {
   SuspendUserRequest,
   BanUserRequest,
   HiddenRecipesResponse,
+  AdminRecipesListResponse,
+  GetAdminRecipesParams,
+  AdminRecipeDetail,
 } from "@/types/admin";
 import { supabase } from "./supabase";
 
@@ -302,4 +305,24 @@ export async function unbanUser(
 
 export async function getStatistics(): Promise<ModerationStatistics> {
   return fetchApi<ModerationStatistics>("/admin/statistics");
+}
+
+// =============================================================================
+// ADMIN RECIPES
+// =============================================================================
+
+export async function getAdminRecipes(params?: GetAdminRecipesParams): Promise<AdminRecipesListResponse> {
+  const searchParams = new URLSearchParams();
+  if (params?.user_id) searchParams.set("user_id", params.user_id);
+  if (params?.search) searchParams.set("search", params.search);
+  if (params?.is_hidden !== undefined) searchParams.set("is_hidden", params.is_hidden.toString());
+  if (params?.limit) searchParams.set("limit", params.limit.toString());
+  if (params?.offset) searchParams.set("offset", params.offset.toString());
+
+  const query = searchParams.toString();
+  return fetchApi<AdminRecipesListResponse>(`/admin/recipes${query ? `?${query}` : ""}`);
+}
+
+export async function getAdminRecipe(recipeId: string): Promise<AdminRecipeDetail> {
+  return fetchApi<AdminRecipeDetail>(`/admin/recipes/${recipeId}`);
 }

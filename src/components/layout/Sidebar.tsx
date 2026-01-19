@@ -9,6 +9,7 @@ import {
   SignOut,
   User,
   Users,
+  CookingPot,
 } from "@phosphor-icons/react";
 import { clsx } from "clsx";
 import { useAuth } from "@/lib/auth-context";
@@ -51,6 +52,11 @@ export function Sidebar({ pendingReports = 0, pendingFeedback = 0 }: SidebarProp
       href: "/users",
       label: "Users",
       icon: <Users size={20} weight="duotone" />,
+    },
+    {
+      href: "/recipes",
+      label: "Recipes",
+      icon: <CookingPot size={20} weight="duotone" />,
     },
   ];
 

@@ -352,3 +352,63 @@ export interface HiddenRecipesResponse {
   recipes: HiddenRecipe[];
   total: number;
 }
+
+// =============================================================================
+// ADMIN RECIPES LIST
+// =============================================================================
+
+export interface AdminRecipeListItem {
+  id: string;
+  title: string;
+  image_url?: string;
+  source_type: string;
+  source_url?: string;
+  is_public: boolean;
+  is_draft: boolean;
+  is_hidden: boolean;
+  created_at: string;
+  created_by: string;
+  uploader?: UserSummary;
+}
+
+export interface AdminRecipesListResponse {
+  recipes: AdminRecipeListItem[];
+  total: number;
+}
+
+export interface GetAdminRecipesParams {
+  user_id?: string;
+  search?: string;
+  is_hidden?: boolean;
+  limit?: number;
+  offset?: number;
+}
+
+export interface AdminRecipeDetail {
+  id: string;
+  title: string;
+  description?: string;
+  image_url?: string;
+  source_type: string;
+  source_url?: string;
+  is_public: boolean;
+  is_draft: boolean;
+  is_hidden: boolean;
+  hidden_at?: string;
+  hidden_reason?: string;
+  created_at: string;
+  created_by: string;
+  ingredients?: Array<{
+    name: string;
+    quantity?: number;
+    unit?: string;
+    notes?: string;
+  }>;
+  instructions?: Array<{
+    step_number: number;
+    title?: string;
+    description: string;
+  }>;
+  uploader?: UserSummary;
+  hidden_by?: UserSummary;
+}
