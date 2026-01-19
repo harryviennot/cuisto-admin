@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Flag, FunnelSimple, CaretRight } from "@phosphor-icons/react";
+import { Flag, FunnelSimple, CaretRight, EyeSlash } from "@phosphor-icons/react";
 import { Header } from "@/components/layout/Header";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -103,14 +103,22 @@ export default function ReportsPage() {
         title="Content Reports"
         subtitle={`${total} report${total !== 1 ? "s" : ""} total`}
         actions={
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowFilters(!showFilters)}
-          >
-            <FunnelSimple size={16} />
-            Filters
-          </Button>
+          <div className="flex items-center gap-2">
+            <Link href="/reports/hidden">
+              <Button variant="outline" size="sm">
+                <EyeSlash size={16} />
+                Hidden Recipes
+              </Button>
+            </Link>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowFilters(!showFilters)}
+            >
+              <FunnelSimple size={16} />
+              Filters
+            </Button>
+          </div>
         }
       />
 

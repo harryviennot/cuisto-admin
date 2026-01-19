@@ -331,3 +331,24 @@ export interface SuspendUserRequest {
 export interface BanUserRequest {
   reason: string;
 }
+
+// =============================================================================
+// HIDDEN RECIPES
+// =============================================================================
+
+export interface HiddenRecipe {
+  id: string;
+  title: string;
+  image_url?: string;
+  source_url?: string;
+  hidden_at?: string;
+  hidden_reason?: string;
+  created_by?: string;
+  owner?: UserSummary;
+  hidden_by?: UserSummary;
+}
+
+export interface HiddenRecipesResponse {
+  recipes: HiddenRecipe[];
+  total: number;
+}

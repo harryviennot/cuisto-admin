@@ -18,6 +18,7 @@ import type {
   WarnUserRequest,
   SuspendUserRequest,
   BanUserRequest,
+  HiddenRecipesResponse,
 } from "@/types/admin";
 import { supabase } from "./supabase";
 
@@ -199,6 +200,18 @@ export async function unhideRecipe(
     method: "POST",
     body: JSON.stringify(data),
   });
+}
+
+export async function getHiddenRecipes(params?: {
+  limit?: number;
+  offset?: number;
+}): Promise<HiddenRecipesResponse> {
+  const searchParams = new URLSearchParams();
+  if (params?.limit) searchParams.set("limit", params.limit.toString());
+  if (params?.offset) searchParams.set("offset", params.offset.toString());
+
+  const query = searchParams.toString();
+  return fetchApi<HiddenRecipesResponse>(`/admin/recipes/hidden${query ? `?${query}` : ""}`);
 }
 
 // =============================================================================
