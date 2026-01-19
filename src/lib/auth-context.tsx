@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
-import { supabase } from "./supabase";
+import { supabase, getSupabaseError } from "./supabase";
 import { verifyAdmin, ApiError } from "./api";
 
 interface AuthContextType {
@@ -73,7 +73,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function signIn(email: string, password: string) {
     if (!supabase) {
-      return { error: new Error("Supabase not configured") };
+      const errorMsg = getSupabaseError() || "Supabase not configured";
+      return { error: new Error(errorMsg) };
     }
 
     // Step 1: Authenticate with Supabase
