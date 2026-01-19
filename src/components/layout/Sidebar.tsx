@@ -8,6 +8,7 @@ import {
   ChatCircleText,
   SignOut,
   User,
+  Users,
 } from "@phosphor-icons/react";
 import { clsx } from "clsx";
 import { useAuth } from "@/lib/auth-context";
@@ -45,6 +46,11 @@ export function Sidebar({ pendingReports = 0, pendingFeedback = 0 }: SidebarProp
       label: "Feedback",
       icon: <ChatCircleText size={20} weight="duotone" />,
       badge: pendingFeedback,
+    },
+    {
+      href: "/users",
+      label: "Users",
+      icon: <Users size={20} weight="duotone" />,
     },
   ];
 

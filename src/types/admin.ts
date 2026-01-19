@@ -190,6 +190,75 @@ export interface UserModerationDetail {
 }
 
 // =============================================================================
+// USER LIST
+// =============================================================================
+
+export interface UserListItem {
+  id: string;
+  name?: string;
+  email?: string;
+  avatar_url?: string;
+  created_at: string;
+  last_sign_in_at?: string;
+
+  // Moderation status
+  moderation_status: UserModerationStatus;
+  warning_count: number;
+  report_count: number;
+
+  // Reporter stats
+  reports_submitted: number;
+  false_report_count: number;
+  reporter_reliability_score: number;
+
+  // Subscription info
+  is_premium: boolean;
+  subscription_expires_at?: string;
+  is_trial: boolean;
+}
+
+export interface UserListResponse {
+  users: UserListItem[];
+  total: number;
+}
+
+export interface GetUsersParams {
+  status?: UserModerationStatus;
+  is_premium?: boolean;
+  search?: string;
+  sort_by?: "created_at" | "name" | "last_sign_in_at";
+  sort_order?: "asc" | "desc";
+  limit?: number;
+  offset?: number;
+}
+
+// User feedback for detail page
+export interface UserFeedback {
+  id: string;
+  recipe_id: string;
+  category: ExtractionFeedbackCategory;
+  description?: string;
+  status: ReportStatus;
+  created_at: string;
+  resolved_at?: string;
+  was_helpful?: boolean;
+  recipes?: RecipeSummary;
+}
+
+// Enhanced user detail with feedback and subscription
+export interface UserModerationDetailEnhanced extends UserModerationDetail {
+  email?: string;
+  created_at?: string;
+  last_sign_in_at?: string;
+  feedback: UserFeedback[];
+  reports_submitted: number;
+  is_premium: boolean;
+  subscription_product_id?: string;
+  subscription_expires_at?: string;
+  is_trial: boolean;
+}
+
+// =============================================================================
 // STATISTICS
 // =============================================================================
 

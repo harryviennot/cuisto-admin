@@ -12,6 +12,12 @@ import {
   Shield,
   Check,
   CaretRight,
+  Crown,
+  Envelope,
+  Calendar,
+  ChatCircleText,
+  Trash,
+  Flag,
 } from "@phosphor-icons/react";
 import { Header } from "@/components/layout/Header";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
@@ -24,10 +30,19 @@ import {
   unsuspendUser,
   banUser,
   unbanUser,
+  deleteUser,
 } from "@/lib/api";
-import type { UserModerationDetail, ModerationAction, UserWarning } from "@/types/admin";
+import type { UserModerationDetailEnhanced } from "@/types/admin";
 
 function formatDate(dateString: string): string {
+  return new Date(dateString).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function formatDateTime(dateString: string): string {
   return new Date(dateString).toLocaleString();
 }
 
@@ -66,12 +81,16 @@ function formatActionType(type: string): string {
   return type.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
 }
 
+function formatCategory(category: string): string {
+  return category.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+}
+
 export default function UserModerationPage() {
   const params = useParams();
   const router = useRouter();
   const userId = params.id as string;
 
-  const [data, setData] = useState<UserModerationDetail | null>(null);
+  const [data, setData] = useState<UserModerationDetailEnhanced | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -127,6 +146,10 @@ export default function UserModerationPage() {
         case "unban":
           await unbanUser(userId, { reason: actionReason });
           break;
+        case "delete":
+          await deleteUser(userId, actionReason);
+          router.push("/users");
+          return;
       }
       // Refresh data
       await fetchUser();
@@ -164,14 +187,14 @@ export default function UserModerationPage() {
     );
   }
 
-  const { user, moderation, warnings, actions } = data;
+  const { user, moderation, warnings, actions, feedback } = data;
   const isSuspended = moderation.status === "suspended";
   const isBanned = moderation.status === "banned";
 
   return (
     <div>
       <Header
-        title="User Moderation"
+        title="User Management"
         subtitle={user?.name || `User ${userId.slice(0, 8)}`}
         actions={
           <Button variant="ghost" size="sm" onClick={() => router.back()}>
@@ -211,6 +234,72 @@ export default function UserModerationPage() {
               </CardContent>
             </Card>
 
+            {/* Account Info */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Account Info</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {data.email && (
+                  <div className="flex items-center gap-3">
+                    <Envelope size={16} className="text-text-muted" />
+                    <span className="text-sm text-text-body">{data.email}</span>
+                  </div>
+                )}
+                {data.created_at && (
+                  <div className="flex items-center gap-3">
+                    <Calendar size={16} className="text-text-muted" />
+                    <div className="text-sm">
+                      <span className="text-text-muted">Joined: </span>
+                      <span className="text-text-body">{formatDate(data.created_at)}</span>
+                    </div>
+                  </div>
+                )}
+                {data.last_sign_in_at && (
+                  <div className="flex items-center gap-3">
+                    <Clock size={16} className="text-text-muted" />
+                    <div className="text-sm">
+                      <span className="text-text-muted">Last active: </span>
+                      <span className="text-text-body">{formatTimeAgo(data.last_sign_in_at)}</span>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Subscription Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Subscription</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {data.is_premium ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Crown size={18} className="text-accent" />
+                      <span className="font-medium text-text-heading">
+                        {data.is_trial ? "Trial" : "Premium"}
+                      </span>
+                    </div>
+                    {data.subscription_expires_at && (
+                      <div className="text-sm text-text-muted">
+                        Expires: {formatDate(data.subscription_expires_at)}
+                      </div>
+                    )}
+                    {data.subscription_product_id && (
+                      <div className="text-sm text-text-muted">
+                        Product: {data.subscription_product_id}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-4">
+                    <Badge variant="outline">Free User</Badge>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
             {/* Moderation Stats */}
             <Card>
               <CardHeader>
@@ -225,6 +314,10 @@ export default function UserModerationPage() {
                   <span className="text-sm text-text-muted">Reports against</span>
                   <span className="font-medium text-text-heading">{moderation.report_count}</span>
                 </div>
+                <div className="flex items-center justify-between pt-3 border-t border-border">
+                  <span className="text-sm text-text-muted">Reports submitted</span>
+                  <span className="font-medium text-text-heading">{data.reports_submitted}</span>
+                </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-text-muted">False reports made</span>
                   <span className="font-medium text-text-heading">{moderation.false_report_count}</span>
@@ -232,14 +325,14 @@ export default function UserModerationPage() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-text-muted">Reporter reliability</span>
                   <span className="font-medium text-text-heading">
-                    {(moderation.reporter_reliability_score * 100).toFixed(0)}%
+                    {moderation.reporter_reliability_score}%
                   </span>
                 </div>
                 {moderation.suspended_until && (
                   <div className="flex items-center justify-between pt-3 border-t border-border">
                     <span className="text-sm text-text-muted">Suspended until</span>
                     <span className="font-medium text-terracotta-500">
-                      {formatDate(moderation.suspended_until)}
+                      {formatDateTime(moderation.suspended_until)}
                     </span>
                   </div>
                 )}
@@ -310,11 +403,22 @@ export default function UserModerationPage() {
                     Remove Ban
                   </Button>
                 )}
+
+                <div className="pt-3 border-t border-border">
+                  <Button
+                    variant="danger"
+                    className="w-full justify-start"
+                    onClick={() => openActionModal("delete")}
+                  >
+                    <Trash size={18} />
+                    Delete User
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Warnings & History */}
+          {/* Warnings, History & Feedback */}
           <div className="lg:col-span-2 space-y-6">
             {/* Warnings */}
             <Card>
@@ -415,6 +519,44 @@ export default function UserModerationPage() {
                 )}
               </CardContent>
             </Card>
+
+            {/* User Feedback */}
+            <Card>
+              <CardHeader>
+                <CardTitle>User Feedback ({feedback?.length || 0})</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {!feedback || feedback.length === 0 ? (
+                  <p className="text-center text-text-muted py-8">No feedback submitted</p>
+                ) : (
+                  <div className="space-y-4">
+                    {feedback.map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex items-start gap-4 p-4 rounded-lg bg-surface"
+                      >
+                        <div className="flex-shrink-0">
+                          <ChatCircleText size={20} className="text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Badge variant="outline">{formatCategory(item.category)}</Badge>
+                            <StatusBadge status={item.status} />
+                          </div>
+                          {item.description && (
+                            <p className="text-text-body text-sm mt-2">{item.description}</p>
+                          )}
+                          <div className="flex items-center gap-4 mt-2 text-sm text-text-muted">
+                            <span>{formatTimeAgo(item.created_at)}</span>
+                            {item.recipes && <span>Recipe: {item.recipes.title}</span>}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
@@ -430,6 +572,7 @@ export default function UserModerationPage() {
                 {actionType === "unsuspend" && "Remove Suspension"}
                 {actionType === "ban" && "Ban User"}
                 {actionType === "unban" && "Remove Ban"}
+                {actionType === "delete" && "Delete User"}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -472,6 +615,18 @@ export default function UserModerationPage() {
                 </div>
               )}
 
+              {actionType === "delete" && (
+                <div className="p-3 rounded-lg bg-terracotta-500/10 border border-terracotta-500/20">
+                  <p className="text-sm text-terracotta-500 font-medium mb-2">
+                    This action is irreversible!
+                  </p>
+                  <p className="text-sm text-terracotta-500">
+                    The user account will be permanently deleted. Video-extracted recipes will be
+                    transferred to the system account. Personal recipes will be deleted.
+                  </p>
+                </div>
+              )}
+
               <div className="flex gap-3 pt-4">
                 <Button
                   variant="outline"
@@ -481,7 +636,11 @@ export default function UserModerationPage() {
                   Cancel
                 </Button>
                 <Button
-                  variant={actionType === "ban" || actionType === "suspend" ? "danger" : "primary"}
+                  variant={
+                    actionType === "ban" || actionType === "suspend" || actionType === "delete"
+                      ? "danger"
+                      : "primary"
+                  }
                   className="flex-1"
                   onClick={handleAction}
                   loading={!!actionLoading}

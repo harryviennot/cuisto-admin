@@ -5,7 +5,9 @@ import type {
   ContentReport,
   ContentReportDetail,
   ExtractionFeedback,
-  UserModerationDetail,
+  UserModerationDetailEnhanced,
+  UserListResponse,
+  GetUsersParams,
   ModerationStatistics,
   ReportQueueResponse,
   FeedbackQueueResponse,
@@ -31,18 +33,29 @@ export class ApiError extends Error {
   }
 }
 
-async function getAuthHeaders(): Promise<Record<string, string>> {
-  if (!supabase) {
-    return {};
-  }
+// Cache for the current access token to avoid repeated getSession calls
+let cachedAccessToken: string | null = null;
 
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.access_token) {
+// Initialize token cache and listen for auth changes
+if (supabase) {
+  // Get initial session
+  supabase.auth.getSession().then(({ data: { session } }) => {
+    cachedAccessToken = session?.access_token ?? null;
+  });
+
+  // Listen for auth state changes to keep token updated
+  supabase.auth.onAuthStateChange((_event, session) => {
+    cachedAccessToken = session?.access_token ?? null;
+  });
+}
+
+function getAuthHeaders(): Record<string, string> {
+  if (!cachedAccessToken) {
     return {};
   }
 
   return {
-    Authorization: `Bearer ${session.access_token}`,
+    Authorization: `Bearer ${cachedAccessToken}`,
   };
 }
 
@@ -51,7 +64,7 @@ async function fetchApi<T>(
   options: RequestInit = {}
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
-  const authHeaders = await getAuthHeaders();
+  const authHeaders = getAuthHeaders();
 
   const response = await fetch(url, {
     ...options,
@@ -192,8 +205,32 @@ export async function unhideRecipe(
 // USERS
 // =============================================================================
 
-export async function getUserModeration(userId: string): Promise<UserModerationDetail> {
-  return fetchApi<UserModerationDetail>(`/admin/users/${userId}`);
+export async function getUsers(params?: GetUsersParams): Promise<UserListResponse> {
+  const searchParams = new URLSearchParams();
+  if (params?.status) searchParams.set("status", params.status);
+  if (params?.is_premium !== undefined) searchParams.set("is_premium", params.is_premium.toString());
+  if (params?.search) searchParams.set("search", params.search);
+  if (params?.sort_by) searchParams.set("sort_by", params.sort_by);
+  if (params?.sort_order) searchParams.set("sort_order", params.sort_order);
+  if (params?.limit) searchParams.set("limit", params.limit.toString());
+  if (params?.offset) searchParams.set("offset", params.offset.toString());
+
+  const query = searchParams.toString();
+  return fetchApi<UserListResponse>(`/admin/users${query ? `?${query}` : ""}`);
+}
+
+export async function getUserModeration(userId: string): Promise<UserModerationDetailEnhanced> {
+  return fetchApi<UserModerationDetailEnhanced>(`/admin/users/${userId}`);
+}
+
+export async function deleteUser(
+  userId: string,
+  reason: string
+): Promise<{ message: string }> {
+  return fetchApi<{ message: string }>(`/admin/users/${userId}`, {
+    method: "DELETE",
+    body: JSON.stringify({ reason }),
+  });
 }
 
 export async function warnUser(

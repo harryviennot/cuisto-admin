@@ -31,6 +31,15 @@ function formatDate(dateString: string): string {
   return new Date(dateString).toLocaleString();
 }
 
+const SUSPENSION_DURATIONS = [
+  { value: 1, label: "24 hours" },
+  { value: 7, label: "7 days" },
+  { value: 30, label: "1 month" },
+  { value: 180, label: "6 months" },
+  { value: 365, label: "1 year" },
+  { value: 1825, label: "5 years" },
+];
+
 export default function ReportDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -47,6 +56,8 @@ export default function ReportDetailPage() {
   const [actionReason, setActionReason] = useState("");
   const [actionNotes, setActionNotes] = useState("");
   const [suspensionDays, setSuspensionDays] = useState(7);
+  const [alsoHideRecipe, setAlsoHideRecipe] = useState(false);
+  const [userAction, setUserAction] = useState<string>("none"); // "none", "warn", "suspend", "ban"
 
   useEffect(() => {
     async function fetchReport() {
@@ -87,17 +98,30 @@ export default function ReportDetailPage() {
     if (!report?.recipe_id) return;
     setActionLoading("hide");
     try {
+      // Hide the recipe
       await hideRecipe(report.recipe_id, {
         reason: actionReason || "Hidden due to content report",
       });
+
+      // If user action is selected, also take action on the user
+      if (userAction !== "none") {
+        await takeActionOnReport(report.id, {
+          action: userAction as "warn_user" | "suspend_user" | "ban_user",
+          reason: actionReason,
+          notes: actionNotes || undefined,
+          suspension_days: userAction === "suspend_user" ? suspensionDays : undefined,
+        });
+        router.push("/reports");
+        return;
+      }
+
       // Update report status
       const data = await getReport(reportId);
       setReport(data);
       setShowActionModal(false);
-      setActionReason("");
-      setActionNotes("");
+      resetModalState();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to hide recipe");
+      alert(err instanceof Error ? err.message : "Failed to complete action");
     } finally {
       setActionLoading(null);
     }
@@ -107,6 +131,13 @@ export default function ReportDetailPage() {
     if (!report || !actionType) return;
     setActionLoading(actionType);
     try {
+      // If also hiding recipe, do that first
+      if (alsoHideRecipe && report.recipe_id) {
+        await hideRecipe(report.recipe_id, {
+          reason: actionReason || "Hidden due to content report",
+        });
+      }
+
       await takeActionOnReport(report.id, {
         action: actionType as "hide_recipe" | "warn_user" | "suspend_user" | "ban_user",
         reason: actionReason,
@@ -122,10 +153,17 @@ export default function ReportDetailPage() {
     }
   }
 
-  function openActionModal(type: string) {
-    setActionType(type);
+  function resetModalState() {
     setActionReason("");
     setActionNotes("");
+    setAlsoHideRecipe(false);
+    setUserAction("none");
+    setSuspensionDays(7);
+  }
+
+  function openActionModal(type: string) {
+    setActionType(type);
+    resetModalState();
     setShowActionModal(true);
   }
 
@@ -436,19 +474,55 @@ export default function ReportDetailPage() {
                 />
               </div>
 
-              {actionType === "suspend_user" && (
+              {/* For user actions (warn/suspend/ban), show "Also hide recipe" checkbox */}
+              {(actionType === "warn_user" || actionType === "suspend_user" || actionType === "ban_user") && report?.recipe_id && (
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={alsoHideRecipe}
+                    onChange={(e) => setAlsoHideRecipe(e.target.checked)}
+                    className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+                  />
+                  <span className="text-sm text-text-body">Also hide the recipe</span>
+                </label>
+              )}
+
+              {/* For hide recipe action, show user action dropdown */}
+              {actionType === "hide_recipe" && (
                 <div>
                   <label className="block text-sm font-medium text-text-body mb-2">
-                    Duration (days)
+                    Also take action on user
                   </label>
-                  <input
-                    type="number"
-                    value={suspensionDays}
-                    onChange={(e) => setSuspensionDays(parseInt(e.target.value) || 7)}
-                    min={1}
-                    max={365}
+                  <select
+                    value={userAction}
+                    onChange={(e) => setUserAction(e.target.value)}
                     className="w-full rounded-lg border border-border bg-surface px-4 py-2 text-text-body focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                  />
+                  >
+                    <option value="none">No additional action</option>
+                    <option value="warn_user">Warn user</option>
+                    <option value="suspend_user">Suspend user</option>
+                    <option value="ban_user">Ban user</option>
+                  </select>
+                </div>
+              )}
+
+              {/* Show suspension duration for suspend actions */}
+              {(actionType === "suspend_user" || userAction === "suspend_user") && (
+                <div>
+                  <label className="block text-sm font-medium text-text-body mb-2">
+                    Suspension Duration
+                  </label>
+                  <select
+                    value={suspensionDays}
+                    onChange={(e) => setSuspensionDays(parseInt(e.target.value))}
+                    className="w-full rounded-lg border border-border bg-surface px-4 py-2 text-text-body focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                  >
+                    {SUSPENSION_DURATIONS.map((duration) => (
+                      <option key={duration.value} value={duration.value}>
+                        {duration.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               )}
 
@@ -474,7 +548,7 @@ export default function ReportDetailPage() {
                   Cancel
                 </Button>
                 <Button
-                  variant={actionType?.includes("ban") || actionType?.includes("suspend") ? "danger" : "primary"}
+                  variant={actionType?.includes("ban") || actionType?.includes("suspend") || userAction?.includes("ban") || userAction?.includes("suspend") ? "danger" : "primary"}
                   className="flex-1"
                   onClick={actionType === "hide_recipe" ? handleHideRecipe : handleTakeAction}
                   loading={!!actionLoading}
