@@ -17,10 +17,12 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Build arguments for NEXT_PUBLIC_ env vars (must be available at build time)
+# Build arguments for env vars (must be available at build time)
 ARG NEXT_PUBLIC_SUPABASE_URL
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
 ARG NEXT_PUBLIC_API_URL
+ARG SUPABASE_URL
+ARG SUPABASE_SECRET_KEY
 
 # Set environment variables for build
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -28,6 +30,8 @@ ENV NODE_ENV=production
 ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV SUPABASE_URL=$SUPABASE_URL
+ENV SUPABASE_SECRET_KEY=$SUPABASE_SECRET_KEY
 
 # Build the application
 RUN npm run build
