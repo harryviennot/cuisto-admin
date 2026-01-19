@@ -1,0 +1,49 @@
+{
+  "common": {
+    "loading": "Chargement...",
+    "error": "Une erreur s'est produite",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "create": "Créer",
+    "search": "Rechercher",
+    "noResults": "Aucun résultat",
+    "confirm": "Confirmer",
+    "back": "Retour",
+    "next": "Suivant",
+    "submit": "Soumettre",
+    "reset": "Réinitialiser",
+    "close": "Fermer",
+    "yes": "Oui",
+    "no": "Non"
+  },
+  "navigation": {
+    "dashboard": "Tableau de bord",
+    "settings": "Paramètres",
+    "users": "Utilisateurs",
+    "recipes": "Recettes",
+    "reports": "Rapports",
+    "analytics": "Analytiques",
+    "logout": "Déconnexion"
+  },
+  "languageSwitcher": {
+    "en": "English",
+    "fr": "Français"
+  },
+  "auth": {
+    "login": "Connexion",
+    "logout": "Déconnexion",
+    "email": "Email",
+    "password": "Mot de passe",
+    "forgotPassword": "Mot de passe oublié ?",
+    "signIn": "Se connecter",
+    "signOut": "Se déconnecter"
+  },
+  "errors": {
+    "generic": "Une erreur s'est produite. Veuillez réessayer.",
+    "notFound": "Non trouvé",
+    "unauthorized": "Vous n'êtes pas autorisé à voir cette page",
+    "networkError": "Erreur réseau. Veuillez vérifier votre connexion."
+  }
+}

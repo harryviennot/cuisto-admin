@@ -1,0 +1,264 @@
+/**
+ * Admin dashboard types - matching backend schemas
+ */
+
+// =============================================================================
+// ENUMS
+// =============================================================================
+
+export type ReportStatus = "pending" | "in_review" | "resolved" | "escalated";
+
+export type ContentReportReason =
+  | "inappropriate_content"
+  | "hate_speech"
+  | "copyright_violation"
+  | "spam_advertising"
+  | "misinformation"
+  | "other";
+
+export type ExtractionFeedbackCategory =
+  | "wrong_ingredients"
+  | "missing_steps"
+  | "incorrect_steps"
+  | "bad_formatting"
+  | "wrong_measurements"
+  | "wrong_servings"
+  | "ai_hallucination"
+  | "wrong_title"
+  | "wrong_image"
+  | "other";
+
+export type UserModerationStatus =
+  | "good_standing"
+  | "warned"
+  | "suspended"
+  | "banned";
+
+export type ModerationActionType =
+  | "dismiss_report"
+  | "hide_recipe"
+  | "unhide_recipe"
+  | "warn_user"
+  | "suspend_user"
+  | "unsuspend_user"
+  | "ban_user"
+  | "unban_user"
+  | "resolve_feedback";
+
+// =============================================================================
+// COMMON TYPES
+// =============================================================================
+
+export interface UserSummary {
+  id: string;
+  name?: string;
+  avatar_url?: string;
+}
+
+export interface RecipeSummary {
+  id: string;
+  title: string;
+  image_url?: string;
+  created_by?: string;
+  is_public?: boolean;
+  source_url?: string;
+}
+
+export interface RecipeDetail extends RecipeSummary {
+  description?: string;
+  ingredients?: Array<{
+    name: string;
+    quantity?: number;
+    unit?: string;
+    notes?: string;
+  }>;
+  instructions?: Array<{
+    step_number: number;
+    title: string;
+    description: string;
+  }>;
+}
+
+// =============================================================================
+// CONTENT REPORTS
+// =============================================================================
+
+export interface ContentReport {
+  id: string;
+  recipe_id: string;
+  reporter_user_id: string;
+  reason: ContentReportReason;
+  description?: string;
+  status: ReportStatus;
+  priority: number;
+  created_at: string;
+  updated_at?: string;
+  resolved_at?: string;
+  resolved_by?: string;
+  resolution_notes?: string;
+  // Nested
+  recipes?: RecipeSummary;
+  reporter?: UserSummary;
+  resolved_by_user?: UserSummary;
+}
+
+export interface ContentReportDetail extends Omit<ContentReport, "recipes"> {
+  recipes?: RecipeDetail;
+}
+
+export interface ReportQueueResponse {
+  reports: ContentReport[];
+  total: number;
+}
+
+// =============================================================================
+// EXTRACTION FEEDBACK
+// =============================================================================
+
+export interface ExtractionFeedback {
+  id: string;
+  recipe_id: string;
+  user_id: string;
+  category: ExtractionFeedbackCategory;
+  description?: string;
+  status: ReportStatus;
+  created_at: string;
+  resolved_at?: string;
+  was_helpful?: boolean;
+  // Nested
+  recipes?: RecipeSummary;
+  user?: UserSummary;
+}
+
+export interface FeedbackQueueResponse {
+  feedback: ExtractionFeedback[];
+  total: number;
+}
+
+// =============================================================================
+// USER MODERATION
+// =============================================================================
+
+export interface UserModeration {
+  id: string;
+  user_id: string;
+  status: UserModerationStatus;
+  warning_count: number;
+  report_count: number;
+  false_report_count: number;
+  suspended_until?: string;
+  ban_reason?: string;
+  reporter_reliability_score: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UserWarning {
+  id: string;
+  user_id: string;
+  issued_by: string;
+  reason: string;
+  recipe_id?: string;
+  acknowledged_at?: string;
+  created_at: string;
+  // Nested
+  issuer?: UserSummary;
+  recipes?: RecipeSummary;
+}
+
+export interface ModerationAction {
+  id: string;
+  moderator_id: string;
+  action_type: ModerationActionType;
+  reason: string;
+  notes?: string;
+  duration_days?: number;
+  target_user_id?: string;
+  target_recipe_id?: string;
+  created_at: string;
+  // Nested
+  moderator?: UserSummary;
+  target_user?: UserSummary;
+  target_recipe?: RecipeSummary;
+}
+
+export interface UserModerationDetail {
+  user?: UserSummary;
+  moderation: UserModeration;
+  warnings: UserWarning[];
+  actions: ModerationAction[];
+}
+
+// =============================================================================
+// STATISTICS
+// =============================================================================
+
+export interface ReportStatistics {
+  by_status: Record<string, number>;
+  pending_by_reason: Record<string, number>;
+}
+
+export interface FeedbackStatistics {
+  by_status: Record<string, number>;
+  pending_by_category: Record<string, number>;
+}
+
+export interface UserModerationStatistics {
+  good_standing: number;
+  warned: number;
+  suspended: number;
+  banned: number;
+}
+
+export interface ActionStatistics {
+  by_type: Record<string, number>;
+  total: number;
+  period_days: number;
+}
+
+export interface ModerationStatistics {
+  reports: ReportStatistics;
+  feedback: FeedbackStatistics;
+  users: UserModerationStatistics;
+  actions: ActionStatistics;
+}
+
+// =============================================================================
+// REQUEST TYPES
+// =============================================================================
+
+export interface DismissReportRequest {
+  reason: string;
+  notes?: string;
+  is_false_report?: boolean;
+}
+
+export interface TakeActionRequest {
+  action: "hide_recipe" | "warn_user" | "suspend_user" | "ban_user";
+  reason: string;
+  notes?: string;
+  suspension_days?: number;
+}
+
+export interface ResolveFeedbackRequest {
+  resolution_notes?: string;
+  was_helpful?: boolean;
+}
+
+export interface HideRecipeRequest {
+  reason: string;
+}
+
+export interface WarnUserRequest {
+  reason: string;
+  recipe_id?: string;
+}
+
+export interface SuspendUserRequest {
+  duration_days: number;
+  reason: string;
+}
+
+export interface BanUserRequest {
+  reason: string;
+}
