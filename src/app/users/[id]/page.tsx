@@ -114,9 +114,10 @@ export default function UserModerationPage() {
 
   // Notification modal
   const [showNotificationModal, setShowNotificationModal] = useState(false);
-  const [notificationTitle, setNotificationTitle] = useState("");
-  const [notificationBody, setNotificationBody] = useState("");
+  const [notificationTitle, setNotificationTitle] = useState({ en: "", fr: "" });
+  const [notificationBody, setNotificationBody] = useState({ en: "", fr: "" });
   const [notificationLoading, setNotificationLoading] = useState(false);
+  const [notificationLanguage, setNotificationLanguage] = useState<"en" | "fr">("en");
 
   async function fetchUser() {
     try {
@@ -194,21 +195,32 @@ export default function UserModerationPage() {
   }
 
   async function handleSendNotification() {
-    if (!notificationTitle.trim() || !notificationBody.trim()) return;
+    if (
+      !notificationTitle.en.trim() ||
+      !notificationTitle.fr.trim() ||
+      !notificationBody.en.trim() ||
+      !notificationBody.fr.trim()
+    ) return;
 
     setNotificationLoading(true);
     try {
       const result = await sendNotification({
         user_id: userId,
-        title: notificationTitle.trim(),
-        body: notificationBody.trim(),
+        title: {
+          en: notificationTitle.en.trim(),
+          fr: notificationTitle.fr.trim(),
+        },
+        body: {
+          en: notificationBody.en.trim(),
+          fr: notificationBody.fr.trim(),
+        },
       });
 
       if (result.success) {
         alert("Notification sent successfully!");
         setShowNotificationModal(false);
-        setNotificationTitle("");
-        setNotificationBody("");
+        setNotificationTitle({ en: "", fr: "" });
+        setNotificationBody({ en: "", fr: "" });
       } else {
         alert(result.message || "Failed to send notification");
       }
@@ -798,7 +810,7 @@ export default function UserModerationPage() {
       {/* Notification Modal */}
       {showNotificationModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <Card className="w-full max-w-md mx-4">
+          <Card className="w-full max-w-lg mx-4">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Bell size={20} />
@@ -806,41 +818,103 @@ export default function UserModerationPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Language Tabs */}
+              <div className="flex gap-2 p-1 bg-surface rounded-lg border border-border">
+                <button
+                  onClick={() => setNotificationLanguage("en")}
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md transition-all ${
+                    notificationLanguage === "en"
+                      ? "bg-primary text-white shadow-soft"
+                      : "text-text-body hover:bg-surface-elevated"
+                  }`}
+                >
+                  <span>🇬🇧</span>
+                  <span className="font-medium">English</span>
+                  {notificationTitle.en.trim() && notificationBody.en.trim() && (
+                    <span className="w-2 h-2 rounded-full bg-white/50" />
+                  )}
+                </button>
+                <button
+                  onClick={() => setNotificationLanguage("fr")}
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md transition-all ${
+                    notificationLanguage === "fr"
+                      ? "bg-primary text-white shadow-soft"
+                      : "text-text-body hover:bg-surface-elevated"
+                  }`}
+                >
+                  <span>🇫🇷</span>
+                  <span className="font-medium">French</span>
+                  {notificationTitle.fr.trim() && notificationBody.fr.trim() && (
+                    <span className="w-2 h-2 rounded-full bg-white/50" />
+                  )}
+                </button>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-text-body mb-2">
-                  Title *
+                  Title ({notificationLanguage.toUpperCase()}) *
                   <span className="text-text-muted font-normal ml-2">
-                    ({notificationTitle.length}/100)
+                    ({notificationTitle[notificationLanguage].length}/100)
                   </span>
                 </label>
                 <input
                   type="text"
-                  value={notificationTitle}
-                  onChange={(e) => setNotificationTitle(e.target.value.slice(0, 100))}
-                  placeholder="Notification title..."
+                  value={notificationTitle[notificationLanguage]}
+                  onChange={(e) =>
+                    setNotificationTitle({
+                      ...notificationTitle,
+                      [notificationLanguage]: e.target.value.slice(0, 100),
+                    })
+                  }
+                  placeholder={
+                    notificationLanguage === "en"
+                      ? "Notification title..."
+                      : "Titre de la notification..."
+                  }
                   className="w-full rounded-lg border border-border bg-surface px-4 py-2 text-text-body placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-text-body mb-2">
-                  Message *
+                  Message ({notificationLanguage.toUpperCase()}) *
                   <span className="text-text-muted font-normal ml-2">
-                    ({notificationBody.length}/500)
+                    ({notificationBody[notificationLanguage].length}/500)
                   </span>
                 </label>
                 <textarea
-                  value={notificationBody}
-                  onChange={(e) => setNotificationBody(e.target.value.slice(0, 500))}
-                  placeholder="Notification message..."
+                  value={notificationBody[notificationLanguage]}
+                  onChange={(e) =>
+                    setNotificationBody({
+                      ...notificationBody,
+                      [notificationLanguage]: e.target.value.slice(0, 500),
+                    })
+                  }
+                  placeholder={
+                    notificationLanguage === "en"
+                      ? "Notification message..."
+                      : "Message de la notification..."
+                  }
                   rows={4}
                   className="w-full rounded-lg border border-border bg-surface px-4 py-2 text-text-body placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary resize-none"
                 />
               </div>
 
+              {/* Content Status */}
+              <div className="flex gap-4 text-sm">
+                <div className={`flex items-center gap-2 ${notificationTitle.en.trim() && notificationBody.en.trim() ? "text-primary" : "text-text-muted"}`}>
+                  <span>🇬🇧</span>
+                  <span>{notificationTitle.en.trim() && notificationBody.en.trim() ? "Complete" : "Incomplete"}</span>
+                </div>
+                <div className={`flex items-center gap-2 ${notificationTitle.fr.trim() && notificationBody.fr.trim() ? "text-primary" : "text-text-muted"}`}>
+                  <span>🇫🇷</span>
+                  <span>{notificationTitle.fr.trim() && notificationBody.fr.trim() ? "Complete" : "Incomplete"}</span>
+                </div>
+              </div>
+
               <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
                 <p className="text-sm text-primary">
-                  This notification will be sent to <strong>{user?.name || "this user"}</strong>.
+                  This notification will be sent to <strong>{user?.name || "this user"}</strong> in their preferred language.
                 </p>
               </div>
 
@@ -850,8 +924,8 @@ export default function UserModerationPage() {
                   className="flex-1"
                   onClick={() => {
                     setShowNotificationModal(false);
-                    setNotificationTitle("");
-                    setNotificationBody("");
+                    setNotificationTitle({ en: "", fr: "" });
+                    setNotificationBody({ en: "", fr: "" });
                   }}
                 >
                   Cancel
@@ -861,7 +935,12 @@ export default function UserModerationPage() {
                   className="flex-1"
                   onClick={handleSendNotification}
                   loading={notificationLoading}
-                  disabled={!notificationTitle.trim() || !notificationBody.trim()}
+                  disabled={
+                    !notificationTitle.en.trim() ||
+                    !notificationTitle.fr.trim() ||
+                    !notificationBody.en.trim() ||
+                    !notificationBody.fr.trim()
+                  }
                 >
                   Send
                 </Button>

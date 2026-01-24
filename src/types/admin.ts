@@ -417,10 +417,15 @@ export interface AdminRecipeDetail {
 // NOTIFICATIONS
 // =============================================================================
 
+export interface LocalizedContent {
+  en: string;
+  fr: string;
+}
+
 export interface SendNotificationRequest {
   user_id?: string;
-  title: string;
-  body: string;
+  title: LocalizedContent;
+  body: LocalizedContent;
   data?: Record<string, any>;
 }
 
