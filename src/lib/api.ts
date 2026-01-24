@@ -22,6 +22,8 @@ import type {
   AdminRecipesListResponse,
   GetAdminRecipesParams,
   AdminRecipeDetail,
+  SendNotificationRequest,
+  SendNotificationResponse,
 } from "@/types/admin";
 import { supabase } from "./supabase";
 
@@ -325,4 +327,17 @@ export async function getAdminRecipes(params?: GetAdminRecipesParams): Promise<A
 
 export async function getAdminRecipe(recipeId: string): Promise<AdminRecipeDetail> {
   return fetchApi<AdminRecipeDetail>(`/admin/recipes/${recipeId}`);
+}
+
+// =============================================================================
+// NOTIFICATIONS
+// =============================================================================
+
+export async function sendNotification(
+  data: SendNotificationRequest
+): Promise<SendNotificationResponse> {
+  return fetchApi<SendNotificationResponse>("/admin/notifications/send", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
 }

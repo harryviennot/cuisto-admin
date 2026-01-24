@@ -22,6 +22,7 @@ import {
   Eye,
   EyeSlash,
   PencilSimple,
+  Bell,
 } from "@phosphor-icons/react";
 import { Header } from "@/components/layout/Header";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
@@ -36,6 +37,7 @@ import {
   unbanUser,
   deleteUser,
   getAdminRecipes,
+  sendNotification,
 } from "@/lib/api";
 import type { UserModerationDetailEnhanced, AdminRecipeListItem } from "@/types/admin";
 
@@ -110,6 +112,12 @@ export default function UserModerationPage() {
   const [actionReason, setActionReason] = useState("");
   const [suspensionDays, setSuspensionDays] = useState(7);
 
+  // Notification modal
+  const [showNotificationModal, setShowNotificationModal] = useState(false);
+  const [notificationTitle, setNotificationTitle] = useState("");
+  const [notificationBody, setNotificationBody] = useState("");
+  const [notificationLoading, setNotificationLoading] = useState(false);
+
   async function fetchUser() {
     try {
       setLoading(true);
@@ -182,6 +190,32 @@ export default function UserModerationPage() {
       alert(err instanceof Error ? err.message : "Failed to perform action");
     } finally {
       setActionLoading(null);
+    }
+  }
+
+  async function handleSendNotification() {
+    if (!notificationTitle.trim() || !notificationBody.trim()) return;
+
+    setNotificationLoading(true);
+    try {
+      const result = await sendNotification({
+        user_id: userId,
+        title: notificationTitle.trim(),
+        body: notificationBody.trim(),
+      });
+
+      if (result.success) {
+        alert("Notification sent successfully!");
+        setShowNotificationModal(false);
+        setNotificationTitle("");
+        setNotificationBody("");
+      } else {
+        alert(result.message || "Failed to send notification");
+      }
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to send notification");
+    } finally {
+      setNotificationLoading(false);
     }
   }
 
@@ -374,6 +408,16 @@ export default function UserModerationPage() {
                 <CardTitle>Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
+                {/* Send Notification - always available */}
+                <Button
+                  variant="primary"
+                  className="w-full justify-start"
+                  onClick={() => setShowNotificationModal(true)}
+                >
+                  <Bell size={18} />
+                  Send Notification
+                </Button>
+
                 {!isBanned && (
                   <>
                     <Button
@@ -744,6 +788,82 @@ export default function UserModerationPage() {
                   disabled={!actionReason}
                 >
                   Confirm
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Notification Modal */}
+      {showNotificationModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <Card className="w-full max-w-md mx-4">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Bell size={20} />
+                Send Notification
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-text-body mb-2">
+                  Title *
+                  <span className="text-text-muted font-normal ml-2">
+                    ({notificationTitle.length}/100)
+                  </span>
+                </label>
+                <input
+                  type="text"
+                  value={notificationTitle}
+                  onChange={(e) => setNotificationTitle(e.target.value.slice(0, 100))}
+                  placeholder="Notification title..."
+                  className="w-full rounded-lg border border-border bg-surface px-4 py-2 text-text-body placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-text-body mb-2">
+                  Message *
+                  <span className="text-text-muted font-normal ml-2">
+                    ({notificationBody.length}/500)
+                  </span>
+                </label>
+                <textarea
+                  value={notificationBody}
+                  onChange={(e) => setNotificationBody(e.target.value.slice(0, 500))}
+                  placeholder="Notification message..."
+                  rows={4}
+                  className="w-full rounded-lg border border-border bg-surface px-4 py-2 text-text-body placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+                />
+              </div>
+
+              <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
+                <p className="text-sm text-primary">
+                  This notification will be sent to <strong>{user?.name || "this user"}</strong>.
+                </p>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => {
+                    setShowNotificationModal(false);
+                    setNotificationTitle("");
+                    setNotificationBody("");
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  className="flex-1"
+                  onClick={handleSendNotification}
+                  loading={notificationLoading}
+                  disabled={!notificationTitle.trim() || !notificationBody.trim()}
+                >
+                  Send
                 </Button>
               </div>
             </CardContent>

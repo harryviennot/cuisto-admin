@@ -10,6 +10,7 @@ import {
   User,
   Users,
   CookingPot,
+  Bell,
 } from "@phosphor-icons/react";
 import { clsx } from "clsx";
 import { useAuth } from "@/lib/auth-context";
@@ -57,6 +58,11 @@ export function Sidebar({ pendingReports = 0, pendingFeedback = 0 }: SidebarProp
       href: "/recipes",
       label: "Recipes",
       icon: <CookingPot size={20} weight="duotone" />,
+    },
+    {
+      href: "/notifications",
+      label: "Notifications",
+      icon: <Bell size={20} weight="duotone" />,
     },
   ];
 

@@ -412,3 +412,21 @@ export interface AdminRecipeDetail {
   uploader?: UserSummary;
   hidden_by?: UserSummary;
 }
+
+// =============================================================================
+// NOTIFICATIONS
+// =============================================================================
+
+export interface SendNotificationRequest {
+  user_id?: string;
+  title: string;
+  body: string;
+  data?: Record<string, any>;
+}
+
+export interface SendNotificationResponse {
+  success: boolean;
+  message: string;
+  sent_count: number;
+  failed_count: number;
+}
